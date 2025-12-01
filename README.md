@@ -59,6 +59,24 @@ Open http://localhost:3000 and drag an image or ZIP to start annotating.
 - Shift + click: Multi-select range (for bulk delete)
 - Drag edges: Resize element
 
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes:
+   - Generalize hardcoded values rather than replacing them with your own
+   - Add tests for new functionality
+   - Ensure all quality checks pass
+4. Submit a pull request
+
+**Code quality requirements:**
+- Lexical complexity checks
+- Syntax linting
+- Code formatting
+- Copyright headers
+
+AI-assisted code is welcome provided it includes tests and passes all checks.
+
 ## License
 
 MIT
