@@ -46,6 +46,8 @@ export interface UIElement {
   readonly exportIcon?: boolean;  // For icons: include cropped image in export
   readonly hAlign?: HAlign;       // For text: horizontal alignment
   readonly vAlign?: VAlign;       // For text: vertical alignment
+  readonly toleranceX?: number;   // Computed: 70% of element width (or cell width for grids)
+  readonly toleranceY?: number;   // Computed: 70% of element height (or cell height for grids)
 }
 
 // Actions are inferred from element type:

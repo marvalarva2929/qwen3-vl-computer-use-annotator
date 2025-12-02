@@ -291,12 +291,51 @@ export default function Home() {
 
     const zip = new JSZip();
 
+    // Compute tolerance values for each element (70% of width/height)
+    // For grid elements, use cell dimensions instead of full element dimensions
+    const elementsWithTolerance = elements.map((el) => {
+      const rows = el.rows || 1;
+      const cols = el.cols || 1;
+
+      let cellWidth: number;
+      let cellHeight: number;
+
+      if (rows > 1 || cols > 1) {
+        // Grid element - compute average cell size based on custom or uniform divisions
+        if (el.colWidths && el.colWidths.length === cols) {
+          // Use average of custom column widths
+          const avgColFraction = el.colWidths.reduce((a, b) => a + b, 0) / cols;
+          cellWidth = avgColFraction * el.bbox.width;
+        } else {
+          cellWidth = el.bbox.width / cols;
+        }
+
+        if (el.rowHeights && el.rowHeights.length === rows) {
+          // Use average of custom row heights
+          const avgRowFraction = el.rowHeights.reduce((a, b) => a + b, 0) / rows;
+          cellHeight = avgRowFraction * el.bbox.height;
+        } else {
+          cellHeight = el.bbox.height / rows;
+        }
+      } else {
+        // Single element - use full dimensions
+        cellWidth = el.bbox.width;
+        cellHeight = el.bbox.height;
+      }
+
+      return {
+        ...el,
+        toleranceX: Math.round(cellWidth * 0.7),
+        toleranceY: Math.round(cellHeight * 0.7),
+      };
+    });
+
     // 1. Add annotation JSON
     const annotation: Annotation = {
       screenName,
       imageSize,
       imagePath,
-      elements,
+      elements: elementsWithTolerance,
       tasks,
       metadata: {
         sourceApp: "",
