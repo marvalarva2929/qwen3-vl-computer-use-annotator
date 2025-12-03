@@ -2,6 +2,42 @@
 
 A visual annotation tool for creating training data for Vision-Language Models (VLMs) to perform computer use tasks. Designed for fine-tuning models like Qwen3-VL for UI grounding and interaction.
 
+## Screenshots
+
+### Annotator Interface
+
+**Empty State** - Drop zone for loading screenshots or previously exported ZIP files. Left sidebar shows element type palette and draw mode options (Single/Grid).
+
+![Empty state](docs/images/01-empty-state.png)
+
+**Image Loaded** - Windows desktop screenshot loaded and ready for annotation. File info displays dimensions and filename. Tips panel shows keyboard shortcuts.
+
+![Image loaded](docs/images/02-image-loaded.png)
+
+**Grid Annotation** - 11×20 grid drawn over the desktop to define icon slot positions. Each cell is numbered for reference. Grid dimensions are configurable in the Edit Element panel.
+
+![Grid annotation](docs/images/03-grid-annotation.png)
+
+**Element Editing** - Multiple elements annotated (desktop grid, taskbar, datetime). The selected text element shows configuration options: label, coordinates, mask toggle, and text alignment controls.
+
+![Element editing](docs/images/04-element-editing.png)
+
+**Task Editing with Prior States** - Login dialog with annotated elements (user listbox, password field, buttons). Task panel shows action type, target element, prompt text, and prior states configuration. Prior states define element conditions (open/expanded, has selection) for training data variation.
+
+![Task editing](docs/images/05-task-editing.png)
+
+### Export Examples
+
+The annotator exports a ZIP containing the original screenshot, an annotated version with bounding box overlays, and a masked version with dynamic content regions filled.
+
+| Original | Annotated | Masked |
+|----------|-----------|--------|
+| ![Original](docs/images/export-original.png) | ![Annotated](docs/images/export-annotated.png) | ![Masked](docs/images/export-masked.png) |
+
+- **Original**: Source screenshot of Open Dental chart view
+- **Annotated**: Bounding boxes overlaid showing element regions and labels
+- **Masked**: Dynamic content (patient data table) masked with solid color for template generation
+
 ## Features
 
 - **Element Annotation**: Draw bounding boxes for UI elements (buttons, text inputs, dropdowns, grids, icons, panels, etc.)

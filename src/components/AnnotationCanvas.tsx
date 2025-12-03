@@ -146,6 +146,11 @@ export default function AnnotationCanvas({
   // Handle Space key for pan mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore space when focus is on text inputs or textareas
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+        return;
+      }
       if (e.code === "Space" && !e.repeat) {
         e.preventDefault();
         setSpaceHeld(true);
