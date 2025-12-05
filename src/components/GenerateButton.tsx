@@ -89,25 +89,44 @@ export function GenerateButton({
       let transcriptionResults: TranscriptionResult[] = [];
       let generatorSuggestions: GeneratorSuggestion[] = [];
 
-      // Step 1: Clip masked regions from elements
-      setCurrentStep("clipping");
-      const clippedRegions = await clipMaskedRegions(imageUrl, elements);
+      // Check if OCR was already done (elements have transcription field)
+      const elementsWithOcr = elements.filter((el) => el.ocr === true);
+      const ocrAlreadyDone = elementsWithOcr.every((el) => el.transcription !== undefined);
 
-      if (clippedRegions.length > 0) {
-        // Step 2: Transcribe with Chandra OCR
-        setCurrentStep("transcribing");
-        setTranscriptionProgress({ completed: 0, total: clippedRegions.length });
-
-        transcriptionResults = await transcribeRegions(
-          clippedRegions,
-          (completed, total) => setTranscriptionProgress({ completed, total })
-        );
-        setTranscriptions(transcriptionResults);
-
-        // Step 3: Analyze transcriptions to suggest generators
+      if (ocrAlreadyDone && elementsWithOcr.length > 0) {
+        // Use existing transcriptions from elements
         setCurrentStep("analyzing");
+        transcriptionResults = elementsWithOcr.map((el) => ({
+          elementId: el.id,
+          text: el.transcription || "",
+          dataType: "text" as const,
+          confidence: 1,
+        }));
+        setTranscriptions(transcriptionResults);
         generatorSuggestions = analyzeTranscriptions(transcriptionResults);
         setSuggestions(generatorSuggestions);
+      } else {
+        // OCR not done yet - run it now
+        // Step 1: Clip masked regions from elements
+        setCurrentStep("clipping");
+        const clippedRegions = await clipMaskedRegions(imageUrl, elements);
+
+        if (clippedRegions.length > 0) {
+          // Step 2: Transcribe with Chandra OCR
+          setCurrentStep("transcribing");
+          setTranscriptionProgress({ completed: 0, total: clippedRegions.length });
+
+          transcriptionResults = await transcribeRegions(
+            clippedRegions,
+            (completed, total) => setTranscriptionProgress({ completed, total })
+          );
+          setTranscriptions(transcriptionResults);
+
+          // Step 3: Analyze transcriptions to suggest generators
+          setCurrentStep("analyzing");
+          generatorSuggestions = analyzeTranscriptions(transcriptionResults);
+          setSuggestions(generatorSuggestions);
+        }
       }
 
       // Step 4: Scaffold generator project

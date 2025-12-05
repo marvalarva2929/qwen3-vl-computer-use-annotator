@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect, DragEvent } from "react";
 import AnnotationCanvas from "@/components/AnnotationCanvas";
 import ElementList from "@/components/ElementList";
 import TaskList from "@/components/TaskList";
-import { GenerateButton } from "@/components/GenerateButton";
 import {
   ElementType,
   ELEMENT_TYPES,
@@ -361,15 +360,6 @@ export default function Home() {
           >
             {isExporting ? (exportStatus || "Exporting...") : "Download ZIP"}
           </button>
-          <GenerateButton
-            screenName={image.screenName}
-            imageSize={image.imageSize}
-            imagePath={image.imagePath}
-            imageUrl={image.imageUrl}
-            elements={annotation.elements}
-            tasks={annotation.tasks}
-            disabled={annotation.elements.length === 0 || ocrPending || isRunningOcr}
-          />
         </div>
       </header>
 
