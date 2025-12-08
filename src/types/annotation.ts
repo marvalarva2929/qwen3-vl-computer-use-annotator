@@ -95,6 +95,7 @@ export interface ElementPriorState {
 export type TaskAction =
   | "key"           // Press a key or key combination
   | "type"          // Type text
+  | "click_type"    // Click then type (2 tool calls: left_click + type)
   | "mouse_move"    // Move mouse to position
   | "left_click"    // Single left click
   | "left_click_drag" // Click and drag

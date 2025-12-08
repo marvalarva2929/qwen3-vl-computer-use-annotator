@@ -22,6 +22,7 @@ const TASK_ACTIONS: { value: TaskAction | "auto"; label: string; needsTarget: bo
   { value: "middle_click", label: "Middle Click", needsTarget: true, needsText: false },
   { value: "left_click_drag", label: "Left Click Drag", needsTarget: true, needsText: false },
   { value: "mouse_move", label: "Mouse Move", needsTarget: true, needsText: false },
+  { value: "click_type", label: "Click → Type (2 calls)", needsTarget: true, needsText: true },
   { value: "type", label: "Type Text", needsTarget: true, needsText: true },
   { value: "key", label: "Press Key", needsTarget: false, needsText: true },
   { value: "scroll", label: "Scroll (vertical)", needsTarget: true, needsText: false },
@@ -129,10 +130,12 @@ export default function TaskList({
               <input
                 type="text"
                 value={selectedTask.taskType ?? ""}
-                onChange={(e) =>
-                  onUpdateTask(selectedTask.id, { taskType: e.target.value || undefined })
-                }
-                placeholder="e.g., click_button_[label], scroll-grid-direction"
+                onChange={(e) => {
+                  // Convert to kebab-case: replace spaces and underscores with hyphens
+                  const kebabValue = e.target.value.toLowerCase().replace(/[\s_]+/g, "-");
+                  onUpdateTask(selectedTask.id, { taskType: kebabValue || undefined });
+                }}
+                placeholder="e.g., click-button-[label], scroll-grid-direction"
                 className="w-full bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-sm"
               />
             </div>
@@ -163,6 +166,7 @@ export default function TaskList({
                   <option value="mouse_move">Mouse Move</option>
                 </optgroup>
                 <optgroup label="Keyboard">
+                  <option value="click_type">Click → Type (2 calls)</option>
                   <option value="type">Type Text</option>
                   <option value="key">Press Key</option>
                 </optgroup>
@@ -213,8 +217,8 @@ export default function TaskList({
               />
             </div>
 
-            {/* Text input - for type/answer actions */}
-            {(currentAction === "type" || currentAction === "answer" || (currentAction === "auto" && targetElement?.type === "textinput")) && (
+            {/* Text input - for type/click_type/answer actions */}
+            {(currentAction === "type" || currentAction === "click_type" || currentAction === "answer" || (currentAction === "auto" && targetElement?.type === "textinput")) && (
               <div>
                 <label className="text-xs text-zinc-400">
                   {currentAction === "answer" ? "Answer" : "Text to Type"}
@@ -376,6 +380,19 @@ export default function TaskList({
                         </option>
                       ))}
                   </optgroup>
+                  <optgroup label="Grids (selection)">
+                    {elements
+                      .filter(
+                        (el) =>
+                          el.type === "grid" &&
+                          !(selectedTask.priorStates ?? []).some((ps) => ps.elementId === el.id)
+                      )
+                      .map((el) => (
+                        <option key={el.id} value={el.id}>
+                          {el.text || el.type}
+                        </option>
+                      ))}
+                  </optgroup>
                   <optgroup label="Inputs (state)">
                     {elements
                       .filter(
@@ -403,6 +420,7 @@ export default function TaskList({
                     const isList = el.type === "dropdown" || el.type === "listbox";
                     const isCheck = el.type === "checkbox" || el.type === "radio";
                     const isPanel = panelTypes.includes(el.type);
+                    const isGrid = el.type === "grid";
 
                     const updatePriorState = (updates: Partial<ElementPriorState>) => {
                       const newStates = (selectedTask.priorStates ?? []).map((s) =>
@@ -486,6 +504,18 @@ export default function TaskList({
                               className="w-3 h-3"
                             />
                             Checked
+                          </label>
+                        )}
+
+                        {isGrid && (
+                          <label className="flex items-center gap-2 text-xs">
+                            <input
+                              type="checkbox"
+                              checked={ps.hasSelection ?? false}
+                              onChange={(e) => updatePriorState({ hasSelection: e.target.checked })}
+                              className="w-3 h-3"
+                            />
+                            Has selected row
                           </label>
                         )}
                       </div>

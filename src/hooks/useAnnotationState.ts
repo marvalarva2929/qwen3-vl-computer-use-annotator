@@ -15,6 +15,15 @@ const CLICK_TASK_PREFIX = "_click_";
 const ICON_TASK_PREFIX = "_icon_";
 const DROPDOWN_OPEN_TASK_PREFIX = "_dropdown_open_";
 const DROPDOWN_SELECT_TASK_PREFIX = "_dropdown_select_";
+const TEXTINPUT_TASK_PREFIX = "_textinput_";
+
+/**
+ * Convert a name to kebab-case for taskType.
+ * Replaces spaces and underscores with hyphens, converts to lowercase.
+ */
+function toKebabCase(name: string): string {
+  return name.toLowerCase().replace(/[\s_]+/g, "-");
+}
 
 /**
  * Generate scroll tasks for a grid element.
@@ -88,7 +97,7 @@ function generateSelectCellTask(element: UIElement, elementName?: string): Task 
  */
 function generateClickTask(element: UIElement): Task {
   const label = element.text || "button";
-  const taskType = `click_${element.type}_${label}`;
+  const taskType = `click-${toKebabCase(element.type)}-${toKebabCase(label)}`;
   return {
     id: `${element.id}${CLICK_TASK_PREFIX}`,
     prompt: `Click the ${label} ${element.type}`,
@@ -107,7 +116,7 @@ function generateIconListTask(elementId: string): Task {
   return {
     id: `${elementId}${ICON_TASK_PREFIX}`,
     prompt: `Double click the [icon_label] icon to open [icon_label]`,
-    taskType: "open_icon_[icon_label]",
+    taskType: "open-icon-[icon_label]",
     targetElementId: elementId,
     action: "double_click" as TaskAction,
   };
@@ -122,7 +131,7 @@ function generateWaitTask(element: UIElement): Task {
   return {
     id: `${element.id}_wait`,
     prompt: `Wait for loading indicator to disappear`,
-    taskType: `wait_${label}`,
+    taskType: `wait-${toKebabCase(label)}`,
     targetElementId: element.id,
     action: "wait" as TaskAction,
     waitTime: waitTime,
@@ -137,22 +146,42 @@ function generateWaitTask(element: UIElement): Task {
  */
 function generateDropdownTasks(element: UIElement): Task[] {
   const name = element.text || "dropdown";
+  const kebabName = toKebabCase(name);
   return [
     {
       id: `${element.id}${DROPDOWN_OPEN_TASK_PREFIX}`,
       prompt: `Click the ${name} to open`,
-      taskType: `click_dropdown_${name}`,
+      taskType: `click-dropdown-${kebabName}`,
       targetElementId: element.id,
       action: "left_click" as TaskAction,
     },
     {
       id: `${element.id}${DROPDOWN_SELECT_TASK_PREFIX}`,
       prompt: `Select the [n]th item labeled "[optionvalue]" from the ${name}`,
-      taskType: `select_dropdown_${name}`,
+      taskType: `select-dropdown-${kebabName}`,
       targetElementId: element.id,
       action: "left_click" as TaskAction,
     },
   ];
+}
+
+/**
+ * Generate a single task template for a text input element.
+ * This single task will produce two tool calls at generation time:
+ * 1. left_click on the field (using targetElementId coordinates)
+ * 2. type the [value]
+ * Format: "Click the [fieldname] field\nType [value]"
+ */
+function generateTextInputTask(element: UIElement): Task {
+  const name = element.text || "field";
+  return {
+    id: `${element.id}${TEXTINPUT_TASK_PREFIX}`,
+    prompt: `Click the ${name} field\nType [value]`,
+    taskType: `fill-textinput-${toKebabCase(name)}`,
+    targetElementId: element.id,
+    action: "click_type" as TaskAction,
+    text: "[value]",
+  };
 }
 
 // Element types that automatically get click tasks
@@ -206,6 +235,9 @@ export function useAnnotationState(): UseAnnotationStateReturn {
     } else if (element.type === "dropdown") {
       const dropdownTasks = generateDropdownTasks(element);
       setTasks((prev) => [...prev, ...dropdownTasks]);
+    } else if (element.type === "textinput") {
+      const textInputTask = generateTextInputTask(element);
+      setTasks((prev) => [...prev, textInputTask]);
     }
   }, []);
 
@@ -234,15 +266,29 @@ export function useAnnotationState(): UseAnnotationStateReturn {
         // Update dropdown task prompts when dropdown label changes
         if (element && element.type === "dropdown") {
           const name = updates.text || "dropdown";
+          const kebabName = toKebabCase(name);
           const openTaskId = `${id}${DROPDOWN_OPEN_TASK_PREFIX}`;
           const selectTaskId = `${id}${DROPDOWN_SELECT_TASK_PREFIX}`;
           setTasks((prevTasks) =>
             prevTasks.map((t) => {
               if (t.id === openTaskId) {
-                return { ...t, prompt: `Click the ${name} to open`, taskType: `click_dropdown_${name}` };
+                return { ...t, prompt: `Click the ${name} to open`, taskType: `click-dropdown-${kebabName}` };
               }
               if (t.id === selectTaskId) {
-                return { ...t, prompt: `Select the [n]th item labeled "[optionvalue]" from the ${name}`, taskType: `select_dropdown_${name}` };
+                return { ...t, prompt: `Select the [n]th item labeled "[optionvalue]" from the ${name}`, taskType: `select-dropdown-${kebabName}` };
+              }
+              return t;
+            })
+          );
+        }
+        // Update text input task prompt when label changes
+        if (element && element.type === "textinput") {
+          const name = updates.text || "field";
+          const taskId = `${id}${TEXTINPUT_TASK_PREFIX}`;
+          setTasks((prevTasks) =>
+            prevTasks.map((t) => {
+              if (t.id === taskId) {
+                return { ...t, prompt: `Click the ${name} field\nType [value]`, taskType: `fill-textinput-${toKebabCase(name)}` };
               }
               return t;
             })
@@ -264,7 +310,8 @@ export function useAnnotationState(): UseAnnotationStateReturn {
       !t.id.startsWith(id + SELECT_TASK_PREFIX) &&
       !t.id.startsWith(id + CLICK_TASK_PREFIX) &&
       !t.id.startsWith(id + DROPDOWN_OPEN_TASK_PREFIX) &&
-      !t.id.startsWith(id + DROPDOWN_SELECT_TASK_PREFIX)
+      !t.id.startsWith(id + DROPDOWN_SELECT_TASK_PREFIX) &&
+      !t.id.startsWith(id + TEXTINPUT_TASK_PREFIX)
     ));
   }, []);
 
@@ -280,7 +327,8 @@ export function useAnnotationState(): UseAnnotationStateReturn {
             t.id.startsWith(id + SELECT_TASK_PREFIX) ||
             t.id.startsWith(id + CLICK_TASK_PREFIX) ||
             t.id.startsWith(id + DROPDOWN_OPEN_TASK_PREFIX) ||
-            t.id.startsWith(id + DROPDOWN_SELECT_TASK_PREFIX)) {
+            t.id.startsWith(id + DROPDOWN_SELECT_TASK_PREFIX) ||
+            t.id.startsWith(id + TEXTINPUT_TASK_PREFIX)) {
           return false;
         }
       }
