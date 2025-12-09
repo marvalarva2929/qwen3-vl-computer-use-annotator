@@ -21,6 +21,7 @@ export const MASKABLE_TYPES: readonly ElementType[] = [
   "menubar",
   "text",
   "mask",
+  "dialog",
 ] as const;
 
 /**
